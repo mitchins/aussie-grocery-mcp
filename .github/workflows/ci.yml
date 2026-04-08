@@ -47,6 +47,19 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e '.[dev]'
+
+      - name: Generate coverage report
+        run: pytest -q --cov=main --cov=cache --cov-report=xml:coverage.xml
+
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v6
         env:
