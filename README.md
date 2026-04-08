@@ -19,7 +19,7 @@ Dual-mode server for checking Woolworths Australia grocery prices, product detai
 # Clone & install
 cd aussie-grocery-mcp
 python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+pip install -e .
 
 # Configure (optional — defaults to Chullora store)
 cp .env.example .env
@@ -102,7 +102,7 @@ GitHub Actions workflows are included:
 
 - `.github/workflows/ci.yml`
   - Runs on push and pull request
-  - Installs `requirements-dev.txt`
+  - Installs project dev extras from `pyproject.toml`
   - Runs `ruff check .` and `pytest -q`
   - Runs optional SonarQube scan when secrets are configured
 - `.github/workflows/release-ghcr.yml`
@@ -111,7 +111,7 @@ GitHub Actions workflows are included:
 
 ### Required repository settings
 
-- Sonar (optional): add `SONAR_TOKEN` and `SONAR_HOST_URL` repository secrets
+- SonarCloud (optional): add `SONAR_TOKEN` repository secret
 - GHCR publishing: ensure Actions has permission to write packages (workflow already requests `packages: write`)
 
 ### Release an image
@@ -131,7 +131,7 @@ docker pull ghcr.io/<owner>/<repo>:v0.1.0
 
 ```bash
 # Install dev tooling
-pip install -r requirements-dev.txt
+pip install -e '.[dev]'
 
 # Unit tests
 pytest
