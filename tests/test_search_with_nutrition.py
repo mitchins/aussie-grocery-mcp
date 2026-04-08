@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 
 import main
@@ -7,6 +9,7 @@ from cache import Cache
 @pytest.mark.asyncio
 async def test_search_with_nutrition_returns_available_items_when_limit_exceeds_results(monkeypatch):
     async def fake_search(query: str, page: int = 1):
+        await asyncio.sleep(0)
         return {
             "search_term": query,
             "total_results": 2,
@@ -18,6 +21,7 @@ async def test_search_with_nutrition_returns_available_items_when_limit_exceeds_
         }
 
     async def fake_nutrition(stockcode: int):
+        await asyncio.sleep(0)
         return {
             "nutrition": {"Sodium Quantity Per 100g - Total - NIP": f"{stockcode * 100}mg"},
             "ingredients": "Milk",
@@ -39,6 +43,7 @@ async def test_search_with_nutrition_returns_available_items_when_limit_exceeds_
 @pytest.mark.asyncio
 async def test_search_with_nutrition_preserves_error_when_nutrition_fails(monkeypatch):
     async def fake_search(query: str, page: int = 1):
+        await asyncio.sleep(0)
         return {
             "search_term": query,
             "total_results": 1,
@@ -49,6 +54,7 @@ async def test_search_with_nutrition_preserves_error_when_nutrition_fails(monkey
         }
 
     async def fake_nutrition(_stockcode: int):
+        await asyncio.sleep(0)
         return {"error": "upstream timeout"}
 
     monkeypatch.setattr(main, "_search", fake_search)
@@ -67,6 +73,7 @@ async def test_nutrition_negative_result_is_cached(monkeypatch):
     call_count = 0
 
     async def fake_get_product_detail(_stockcode: int):
+        await asyncio.sleep(0)
         nonlocal call_count
         call_count += 1
         return {"Name": "No Nutrition Product", "Stockcode": 99, "AdditionalAttributes": {}}

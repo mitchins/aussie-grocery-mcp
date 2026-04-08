@@ -1,3 +1,5 @@
+import pytest
+
 import main
 
 
@@ -17,7 +19,7 @@ def test_fmt_product_maps_fields():
     assert result["stockcode"] == 41402
     assert result["name"] == "Bulla Cottage Cheese Original"
     assert result["brand"] == "Bulla"
-    assert result["price"] == 4.2
+    assert result["price"] == pytest.approx(4.2)
     assert result["is_available"] is True
     assert result["package_size"] == "200g"
     assert result["url"].endswith("/41402/bulla-cottage-cheese-original")

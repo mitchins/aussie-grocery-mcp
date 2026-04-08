@@ -149,7 +149,7 @@ async def _search(query: str, page: int = 1) -> dict:
     cache_key = f"{query.lower().strip()}|{page}"
     hit = await cache.get_search(cache_key)
     if hit:
-        logger.info("search cache hit: %s", cache_key)
+        logger.info("search cache hit on page=%d", page)
         return hit
     raw = await api.search_products(query, page=page)
     products = [
