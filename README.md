@@ -16,17 +16,18 @@ Dual-mode server for checking Woolworths Australia grocery prices, product detai
 ## Quick Start
 
 ```bash
-# Clone & install
+# Clone & run (uv)
 cd aussie-grocery-mcp
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e .
+uv sync
 
 # Configure (optional — defaults to Chullora store)
 cp .env.example .env
 
 # Run
-python main.py
+uv run python main.py
 ```
+
+Prefer pip? See the development guide.
 
 Server starts on `http://0.0.0.0:8765` and exposes:
 
@@ -96,56 +97,9 @@ docker build -t aussie-grocery-mcp .
 docker run -p 8765:8765 aussie-grocery-mcp
 ```
 
-## CI/CD
+## Development
 
-GitHub Actions workflows are included:
-
-- `.github/workflows/ci.yml`
-  - Runs on push and pull request
-  - Installs project dev extras from `pyproject.toml`
-  - Runs `ruff check .` and `pytest -q`
-  - Runs optional SonarQube scan when secrets are configured
-- `.github/workflows/release-ghcr.yml`
-  - Runs on tags like `v1.2.3`
-  - Builds Docker image and pushes to `ghcr.io/<owner>/<repo>`
-
-### Required repository settings
-
-- SonarCloud (optional): add `SONAR_TOKEN` repository secret
-- GHCR publishing: ensure Actions has permission to write packages (workflow already requests `packages: write`)
-
-### Release an image
-
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-After release workflow completes, pull with:
-
-```bash
-docker pull ghcr.io/<owner>/<repo>:v0.1.0
-```
-
-## Testing And Quality
-
-```bash
-# Install dev tooling
-pip install -e '.[dev]'
-
-# Unit tests
-pytest
-
-# Lint
-ruff check .
-```
-
-SonarQube/SonarCloud is configured via `sonar-project.properties`.
-
-```bash
-# Example (requires SONAR_TOKEN and project binding)
-sonar-scanner
-```
+Contributor workflows (pip install, testing/linting, CI/CD, Sonar, and GHCR release) are in [development.md](development.md).
 
 ## Environment Variables
 

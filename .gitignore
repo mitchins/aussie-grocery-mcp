@@ -1,4 +1,6 @@
 __pycache__/
+.pytest_cache/
+.ruff_cache/
 *.py[cod]
 *.egg-info/
 dist/
@@ -6,6 +8,8 @@ build/
 .eggs/
 *.egg
 .env
+.coverage
+coverage.xml
 cache.db
 *.db
 .venv/
