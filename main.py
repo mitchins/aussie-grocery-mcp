@@ -17,6 +17,7 @@ import asyncio
 import json
 import logging
 import os
+from contextlib import asynccontextmanager
 
 import uvicorn
 from dotenv import load_dotenv
@@ -44,6 +45,10 @@ HOST = os.getenv("HOST", "0.0.0.0")
 
 api = WoolworthsClient(store_id=STORE_ID)
 cache = Cache(db_path=CACHE_DB)
+
+# In-flight deduplication: prevents concurrent requests for the same stockcode
+# each making a separate backend call. The second caller awaits the first's result.
+_nutrition_inflight: dict[int, asyncio.Event] = {}
 
 
 class SearchProductsRequest(BaseModel):
@@ -190,12 +195,26 @@ async def _nutrition(stockcode: int) -> dict:
     if hit:
         logger.info("nutrition cache hit: %d", stockcode)
         return hit
-    raw = await api.get_product_detail(stockcode)
-    result = _parse_nutrition(raw)
-    if result is None:
-        return {"error": f"No nutrition info available for stockcode {stockcode}"}
-    await cache.set_nutrition(stockcode, result)
-    return result
+
+    # Coalesce concurrent requests for the same stockcode into one backend call.
+    if stockcode in _nutrition_inflight:
+        logger.info("nutrition coalesced: %d", stockcode)
+        await _nutrition_inflight[stockcode].wait()
+        return await cache.get_nutrition(stockcode) or {"error": f"No nutrition info for stockcode {stockcode}"}
+
+    event = asyncio.Event()
+    _nutrition_inflight[stockcode] = event
+    try:
+        raw = await api.get_product_detail(stockcode)
+        result = _parse_nutrition(raw)
+        if result is None:
+            result = {"error": f"No nutrition info available for stockcode {stockcode}"}
+        # Cache both positive results and confirmed negatives to avoid repeat fetches.
+        await cache.set_nutrition(stockcode, result)
+        return result
+    finally:
+        _nutrition_inflight.pop(stockcode, None)
+        event.set()
 
 
 async def _search_with_nutrition(query: str, page: int = 1, limit: int = 5) -> dict:
@@ -302,6 +321,14 @@ async def get_nutrition(stockcode: int) -> str:
 
 mcp_http_app = mcp.http_app(transport="streamable-http", path="/")
 
+
+@asynccontextmanager
+async def _lifespan(app: FastAPI):
+    await cache.evict_expired()
+    async with mcp_http_app.lifespan(app):
+        yield
+
+
 app = FastAPI(
     title="Woolworths Grocery",
     description=(
@@ -310,8 +337,18 @@ app = FastAPI(
         "get_nutrition for detail."
     ),
     version="1.0.0",
-    lifespan=mcp_http_app.lifespan,
+    lifespan=_lifespan,
 )
+
+
+@app.get("/health", include_in_schema=False)
+async def health():
+    return {"status": "ok"}
+
+
+@app.get("/cache/stats", include_in_schema=False)
+async def cache_stats():
+    return cache.stats()
 
 
 @app.get(
